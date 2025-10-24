@@ -29,6 +29,7 @@ export default function App() {
   function handleSelection(friend) {
     setSelectedFriend((cur) => (cur?.id === friend.id ? null : friend));
     // setSelectedFriend(friend);
+    setShowAddFriend(false);
   }
 
   function handleShowAddFriend() {
@@ -37,6 +38,18 @@ export default function App() {
   function handleAddFriend(friend) {
     setFriends((friends) => [...friends, friend]);
     setShowAddFriend(false);
+  }
+
+  function handleSplitBill(value) {
+    setFriends((friends) =>
+      friends.map((friend) =>
+        friend.id === selectedFriend.id
+          ? { ...friend, balance: friend.balance + value }
+          : friend
+      )
+    );
+
+    setSelectedFriend(null);
   }
   return (
     <div className="app">
@@ -51,7 +64,12 @@ export default function App() {
           {showAddFriend ? "Close" : "Add Friend"}
         </Button>
       </div>
-      {selectedFriend && <FormSplitBill selectedFriend={selectedFriend} />}
+      {selectedFriend && (
+        <FormSplitBill
+          selectedFriend={selectedFriend}
+          onSplitBill={handleSplitBill}
+        />
+      )}
     </div>
   );
 }
@@ -80,11 +98,11 @@ function Friend({ friend, onSelection, selectedFriend }) {
 
       {friend.balance < 0 ? (
         <p className="red">
-          You owe ${friend.name} ${Math.abs(friend.balance)}€
+          You owe {friend.name} {Math.abs(friend.balance)}€
         </p>
       ) : friend.balance > 0 ? (
         <p className="green">
-          ${friend.name} owes you ${friend.balance} €
+          {friend.name} owes you {friend.balance} €
         </p>
       ) : (
         <p>You and {friend.name} are even.</p>
@@ -152,19 +170,49 @@ function FormAddFriend({ onAddFriend }) {
   );
 }
 
-function FormSplitBill({ selectedFriend }) {
+function FormSplitBill({ selectedFriend, onSplitBill }) {
+  const [bill, setBill] = useState("");
+  const [paidByUser, setPaidByUser] = useState("");
+  const [whoIsPaying, setWhoIsPaying] = useState("user");
+  const paidByFriend = bill ? bill - paidByUser : "";
+
+  // if (whoIsPaying == "user");
+  // else whoIsPaying == "friend";
+
+  function handleSumbit(event) {
+    event.preventDefault();
+
+    if (!bill || !paidByUser) return;
+
+    onSplitBill(whoIsPaying === "user" ? paidByFriend : -paidByFriend);
+  }
   return (
-    <form className="form-split-bill">
+    <form className="form-split-bill" onSubmit={handleSumbit}>
       <h2>Split a Bill with {selectedFriend.name}</h2>
 
       <label>💰 Bill Value</label>
-      <input type="text" />
+      <input
+        type="text"
+        value={bill}
+        onChange={(e) => setBill(Number(e.target.value))}
+      />
       <label>🙎 Your expense</label>
-      <input type="text" />
+      <input
+        type="text"
+        value={paidByUser}
+        onChange={(e) =>
+          setPaidByUser(
+            Number(e.target.value) > bill ? paidByUser : Number(e.target.value)
+          )
+        }
+      />
       <label>🧑‍🤝‍🧑 {selectedFriend.name}'s expense</label>
-      <input type="text" disabled />
+      <input type="text" value={paidByFriend} disabled />
       <label>🤑 How is paying the bill</label>
-      <select>
+      <select
+        value={whoIsPaying}
+        onChange={(e) => setWhoIsPaying(e.target.value)}
+      >
         <option value="you">You</option>
         <option value="friend">{selectedFriend.name}</option>
       </select>
